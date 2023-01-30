@@ -11,7 +11,7 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
-        haskellPackages = pkgs.haskell.packages.ghc8107;
+        haskellPackages = pkgs.haskell.packages.ghc810;
 
         jailbreakUnbreak = pkg:
           pkgs.haskell.lib.doJailbreak (pkg.overrideAttrs (_: { meta = { }; }));
@@ -26,12 +26,16 @@
         defaultPackage = self.packages.${system}.${packageName};
 
         devShell = pkgs.mkShell {
+          LANG = "C.UTF-8";
           buildInputs = with haskellPackages; [
             haskell-language-server
             hoogle
             ghcid
             cabal-install
             pkgs.zlib
+            pkgs.terraform
+            pkgs.dhall
+            pkgs.dhall-json
           ];
           inputsFrom = builtins.attrValues self.packages.${system};
         };

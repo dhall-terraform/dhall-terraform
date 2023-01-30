@@ -5,7 +5,6 @@ module Main
   )
 where
 
-import qualified System.IO as IO
 import qualified Data.Text.IO as TIO
 import Control.Concurrent.Async (mapConcurrently_)
 import qualified Data.Aeson as Aeson

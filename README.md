@@ -24,6 +24,33 @@ project.
 - Use `dhall-to-json` to generate terraform's [JSON syntax][terraform_json_syntax]
 - Continue with `terraform` operations as normal.
 
+### Usage Example for AWS
+
+```bash
+nix develop # wait for shell
+cabal build # wait for build
+source dtf # get the "dhall terraform" helper function in scope FIXME: This should be done by nix
+HERE=$(pwd)
+DEV_DIR="ex"  # Make place for us to write dev stuff.
+              # Choose your own folder outside if you want.
+              # Assumed by subsequent code to be a _relative_ directory
+mkdir -p "$DEV_DIR"/schemas # Make a place to put the aws schema
+mkdir -p "$DEV_DIR"/lib # Make a place to put the generated Dhall files
+mkdir -p "$DEV_DIR"/src # Make a place to put your resources
+cd tf/aws # there is an example gen.tf here that does nothing except pull in hashicorp/aws
+terraform init
+terraform providers schema -json > schema.json
+cd "$HERE" # change back to the root of this project
+mv tf/aws/schema.json "$DEV_DIR"/schemas/aws.json
+cp -r static/ "$DEV_DIR"/static/ # copy the util.dhall file to where the lib can find it when generated
+cabal run -- dhall-terraform-libgen -f "$DEV_DIR"/schemas/aws.json -p registry.terraform.io/hashicorp/aws -o "$DEV_DIR"/lib
+cd "$DEV_DIR"/src
+$EDITOR main.dhall # edit your file
+dtf main.dhall # generate and validate the terraform you made
+# terraform plan ...
+# etc
+```
+
 ### AWS example
 
 Example using the generated resources from the AWS provider.
@@ -107,3 +134,11 @@ Available options:
 ```
 
 [terraform_json_syntax]: https://www.terraform.io/docs/configuration/syntax-json.html
+
+### Troubleshooting
+
+If you get an error when running `cabal run -- dhall-terraform-libgen ...` that looks like:
+
+```text
+
+```
