@@ -1,4 +1,4 @@
-let MkReferenceType = \(a : Type) -> < Ref : Text | Val : a >
+let MkReferenceType = λ(a : Type) → < Ref : Text | Val : a >
 
 let TextR = MkReferenceType Text
 
@@ -12,7 +12,7 @@ let DoubleR = MkReferenceType Double
 
 let TagType = { mapKey : Text, mapValue : Text }
 
-let mkTag = \(k : Text) -> \(v : Text) -> { mapKey = k, mapValue = v }
+let mkTag = λ(k : Text) → λ(v : Text) → { mapKey = k, mapValue = v }
 
 in  { Reference =
       { MkType = MkReferenceType
@@ -24,4 +24,15 @@ in  { Reference =
       }
     , Tag = { Type = TagType, mk = mkTag }
     , Tags.Type = List TagType
+    , t = TextR.Val
+    , n = NaturalR.Val
+    , i = IntegerR.Val
+    , b = BoolR.Val
+    , d = DoubleR.Val
+    , mkResT =
+        λ(a : Type) →
+        λ(name : Text) →
+        λ(x : a) →
+          { mapKey = name, mapValue = x }
+    , Res.Type = λ(a : Type) → { mapKey : Text, mapValue : a }
     }
