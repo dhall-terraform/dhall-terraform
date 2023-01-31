@@ -76,17 +76,16 @@ let toAwsS3BucketRes =
         AwsS3Bucket.mkRes
           bkt.name
           AwsS3Bucket::{
-          , bucket = Some (Util.t bkt.name)
-          , tags = Some
-              ( AwsS3Bucket.val
-                  AwsS3Bucket.Fields.tags
-                  [ { mapKey = "content", mapValue = bkt.name }
-                  , { mapKey = "description", mapValue = bkt.description }
-                  ]
-              )
+          , bucket = Util.st bkt.name
+          , tags =
+              AwsS3Bucket.sval
+                AwsS3Bucket.Fields.tags
+                [ Util.Tag.mk "content" bkt.name
+                , Util.Tag.mk "description" bkt.description
+                ]
           }
 
-let awsProvider = AwsProvider::{ region = Some (Util.t defaultRegion) }
+let awsProvider = AwsProvider::{ region = Util.st defaultRegion }
 
 in  { provider.aws = awsProvider
     , resource.aws_s3_bucket

@@ -14,8 +14,8 @@ let TagType = { mapKey : Text, mapValue : Text }
 
 let mkTag = λ(k : Text) → λ(v : Text) → { mapKey = k, mapValue = v }
 
-in  { Reference =
-      { MkType = MkReferenceType
+in  { RefVal =
+      { Type = MkReferenceType
       , Text = TextR
       , Natural = NaturalR
       , Integer = IntegerR
@@ -25,14 +25,21 @@ in  { Reference =
     , Tag = { Type = TagType, mk = mkTag }
     , Tags.Type = List TagType
     , t = TextR.Val
+    , st = λ(x : Text) → Some (TextR.Val x)
     , n = NaturalR.Val
+    , sn = λ(x : Natural) → Some (NaturalR.Val x)
     , i = IntegerR.Val
+    , si = λ(x : Integer) → Some (IntegerR.Val x)
     , b = BoolR.Val
+    , sb = λ(x : Bool) → Some (BoolR.Val x)
     , d = DoubleR.Val
-    , mkResT =
-        λ(a : Type) →
-        λ(name : Text) →
-        λ(x : a) →
-          { mapKey = name, mapValue = x }
-    , Res.Type = λ(a : Type) → { mapKey : Text, mapValue : a }
+    , sd = λ(x : Double) → Some (DoubleR.Val x)
+    , Res =
+      { Type = λ(a : Type) → { mapKey : Text, mapValue : a }
+      , mk =
+          λ(a : Type) →
+          λ(name : Text) →
+          λ(x : a) →
+            { mapKey = name, mapValue = x }
+      }
     }

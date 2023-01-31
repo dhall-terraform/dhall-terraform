@@ -104,23 +104,35 @@ mkRecord ty rootPath name block = do
                 (Dhall.makeBinding "typeOf" (mkBlockTypeOfField block)) $
                 Dhall.Let
                   (Dhall.makeBinding "T" (mkBlockType block)) $
-                  Dhall.RecordLit $
-                    Dhall.makeRecordField
-                      <$> Dhall.Map.fromList
-                        [ ("Type", bigTypeVar)
-                        , ("default", mkBlockDefault block)
-                        , ("Fields", typeVar)
-                        , ("showField", showVar)
-                        , ("typeOfField", typeOfVar)
-                        , ("ref", mkBlockRef "Ref" name ty block)
-                        , ("val", mkBlockRef "Val" name ty block)
-                        , ("mkRes", mkBlockMkRes name block)
-                        ]
+                  Dhall.Let
+                    (Dhall.makeBinding "ref" (mkBlockRef "Ref" name ty block)) $
+                    Dhall.Let
+                      (Dhall.makeBinding "val" (mkBlockRef "Val" name ty block)) $
+                      Dhall.RecordLit $
+                        Dhall.makeRecordField
+                          <$> Dhall.Map.fromList
+                            [ ("Type", bigTypeVar)
+                            , ("default", mkBlockDefault block)
+                            , ("Fields", typeVar)
+                            , ("showField", showVar)
+                            , ("typeOfField", typeOfVar)
+                            , ("ref", refVar)
+                            , ("sref", mkBlockSRef)
+                            , ("val", valVar)
+                            , ("sval", mkBlockSVal)
+                            , ("mkRes", mkBlockMkRes name block)
+                            ]
   Turtle.mktree rootPath
   writeDhall recordPath record
   where
     bigTypeVar :: Dhall.Expr s a
     bigTypeVar = Dhall.Var $ Dhall.V "T" 0
+
+    valVar :: Dhall.Expr s a
+    valVar = Dhall.Var $ Dhall.V "val" 0
+
+    refVar :: Dhall.Expr s a
+    refVar = Dhall.Var $ Dhall.V "ref" 0
 
     typeVar :: Dhall.Expr s a
     typeVar = Dhall.Var $ Dhall.V "type" 0
@@ -139,13 +151,16 @@ mkRecord ty rootPath name block = do
     stripOptional (Dhall.App Dhall.Optional t) = t
     stripOptional expr = expr
 
+    util :: Dhall.Expr s a
     util = Dhall.Var $ Dhall.V "Util" 0
 
     utilMkReferenceTypeVar :: Dhall.Expr s a
-    utilMkReferenceTypeVar = Dhall.Field (Dhall.Field util (Dhall.makeFieldSelection "Reference")) (Dhall.makeFieldSelection "MkType")
+    utilMkReferenceTypeVar = Dhall.Field (Dhall.Field util (Dhall.makeFieldSelection "RefVal")) (Dhall.makeFieldSelection "Type")
 
+    appMkRefType :: Dhall.Expr s a -> Dhall.Expr s a
     appMkRefType = Dhall.App utilMkReferenceTypeVar
 
+    mkRefType :: Dhall.Expr s a -> Dhall.Expr s a
     mkRefType = underOptional appMkRefType
 
     mkBlockType :: BlockRepr -> Expr
@@ -204,8 +219,8 @@ mkRecord ty rootPath name block = do
                                               ] "}")))
            _ -> ref
       where
-        referenceType = Dhall.App utilMkReferenceTypeVar (Dhall.App typeOfVar (Dhall.Var $ Dhall.V "field" 0))
-        ref = Dhall.Field referenceType (Dhall.makeFieldSelection valOrRef)
+        refValType = Dhall.App utilMkReferenceTypeVar (Dhall.App typeOfVar (Dhall.Var $ Dhall.V "field" 0))
+        ref = Dhall.Field refValType (Dhall.makeFieldSelection valOrRef)
 
     mkBlockMkRes :: Text -> BlockRepr -> Expr
     mkBlockMkRes name b =
@@ -218,10 +233,29 @@ mkRecord ty rootPath name block = do
                 Dhall.App
                   (Dhall.App
                     (Dhall.App
-                       (Dhall.Field util (Dhall.makeFieldSelection "mkResT"))
+                       (Dhall.Field (Dhall.Field util (Dhall.makeFieldSelection "Res")) (Dhall.makeFieldSelection "mk"))
                        bigTypeVar)
                     (Dhall.Var $ Dhall.V "name" 0))
                   (Dhall.Var $ Dhall.V "x" 0)
+
+    mkBlockSVal =
+        Dhall.Lam
+          Nothing
+          (Dhall.makeFunctionBinding "field" typeVar)
+          (Dhall.Lam
+             Nothing
+             (Dhall.makeFunctionBinding "x" (Dhall.App typeOfVar (Dhall.Var $ Dhall.V "field" 0)))
+             (Dhall.Some (Dhall.App (Dhall.App valVar (Dhall.Var $ Dhall.V "field" 0)) (Dhall.Var $ Dhall.V "x" 0))))
+
+    mkBlockSRef =
+        Dhall.Lam
+          Nothing
+          (Dhall.makeFunctionBinding "field" typeVar)
+          (Dhall.Lam
+             Nothing
+             (Dhall.makeFunctionBinding "name" Dhall.Text)
+             (Dhall.Some (Dhall.App (Dhall.App refVar (Dhall.Var $ Dhall.V "field" 0)) (Dhall.Var $ Dhall.V "name" 0))))
+
 
     defAttrs = attrs (toDefault . mkRefType)
     typeAttrs = attrs Just
